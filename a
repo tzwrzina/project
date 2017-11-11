@@ -1,0 +1,529 @@
+#include <iostream>
+#include <string>
+#include <fstream>
+#include<cstring>
+#include<cstdlib>
+#include <cmath>
+# define K  1000  //goneis
+# define C  50   // paidia
+
+using namespace std;
+
+long long toString(string rec);
+string put;
+struct trie_node{
+char word[50];
+char is_final[1];
+int num_child, seats;
+trie_node *children[];
+};
+
+
+class Index
+{
+    public:
+        trie_node *root ; 
+        int N, num_child, seats;
+    
+        Index(int key )
+        {   this->N = K;
+            trie_node new_1=(trie_node)malloc(sizeof(trie_node));
+            //trie_node *new_1 = (trie_node*)malloc(2*K*sizeof(trie_node));
+            this->root=new_1;
+            this->root->num_child=0;                   // kauorizo to root 
+            this->root->seats=key;
+            strcpy(this->root->is_final ,"N");
+            for (int i = 0; i < K; i++)
+            {  
+                this->root->children[i] = NULL;                 // kauorizo paidia root
+                add_child(this->root,i);
+            }
+        }
+     ~Index()
+       {    
+	       
+		  }
+ 
+    void add_child(trie_node *new_node, int i){
+	     trie_node *new_1 = (trie_node*)malloc(C*sizeof(trie_node));
+    	if(new_node->children[i]==NULL) {
+        	new_node->children[i]=new_1;
+        	new_node->children[i]->seats=K;
+        	new_node->children[i]->num_child=0;
+        	 strcpy(new_node->children[i]->is_final ,"N");
+				}
+	}
+/*
+void new_child (trie_node *node, string word ){ 
+    	string str2 (" "), first,last;
+        size_t found=0;
+        found = word.find(str2);
+        first =word.substr (0,found).c_str();
+         
+        if (found >= word.length()) found=0;                                           // found=0 => Den exei alli leksi
+           int find=diarein(node, 0, node->num_child,first,0);                            //koitaw an uparxei hdh
+           if (find==-1)find=0;
+           if (find > 0) {                                                                // YPARXEI to paidi
+           	if (found>0) {  last=word.substr (found+1).c_str();                             // pare tin alli leksi
+			                new_child(node->children[find], last);                          //  pare ton apogono
+                         }else{                                                           // Den exei alli leksi
+                         	strcpy(node->children[find]->is_final ,"Y");                  // Dilose oti einai termatiki 
+                         	sort(node); 
+							return;
+						 }
+		   }else{                                                                         // Den yparxei i leksi
+			    if (found ==0 ){    // den exei alli leks
+			    trie_node *new1 = new trie_node;
+        	    new1->seats=K;
+        	    new1->num_child=0;
+        	    strcpy(new1->is_final ,"Y");
+        	    strcpy(new1->word,first.c_str());
+        	    node->children[node->num_child]=new1;
+                node->num_child ++;     			                                     // auksise to deikti paidion 
+                sort(node);
+				return ;
+			}   else{ 
+			    add_child(node, node->num_child);                                     // exei alli leksi
+			    strcpy(node->children[node->num_child]->word ,first.c_str());
+		    	last=word.substr (found+1).c_str();  
+				                                // pare tin alli leksi
+			    new_child(node->children[node->num_child], last);                     // pare to eggoni
+			    node->num_child++;
+			    sort(node);
+			}		
+		return;}
+	
+	}
+	
+	void new_child_1 (trie_node *node, string word ){ 
+    	string str2 (" "), first,last;
+        size_t found=0;
+        int find;
+        found = word.find(str2);
+        word =word.substr (found+1).c_str(); 
+        found = word.find(str2);
+		first =word.substr (0,found).c_str();
+		if (found > word.length()) found=0;                                               // found=0 => Den exei alli leksi
+        if (found>0 )last=word.substr (found+1).c_str();                               
+        add_child(node, node->num_child);
+        if (found ==0 ){                                                                        // termatiko
+		strcpy(node->children[node->num_child]->word, first.c_str());                 // bazo paidi
+		strcpy(node->children[node->num_child]->is_final, "Y"); 
+	    node->num_child++;
+	    sort(node);
+		return;
+			}else   {                                                                             // exei alli leksi
+				   strcpy(node->children[node->num_child]->word, first.c_str());                 // Bazo paidi
+				    new_child_1 (node->children[node->num_child], last );                          // fonazo apogono
+				   node->num_child++;
+				   sort(node);
+				    return;
+			}     
+		}
+     
+	
+  
+ 
+void create_child_1(trie_node *node,trie_node *new_node,int j, string x){
+	
+	for (int i=0;i<node->num_child;i++){
+		 x=node->children[i]->word;
+         if (strcmp(node->children[i]->is_final,"Y")==0) { new_child_1(new_node, x ); }             //bale to paidi sto epomeno kombo 
+         if (node->children[i]->num_child>0 )  {create_child_1(node->children[i],new_node,j,x);}
+          }
+          return ;
+}
+
+void put_away(trie_node *new_node) {   
+        string leksi;
+        for(int i=0;i<new_node->num_child-1;i++){
+		    if(strcmp(new_node->children[i]->word,new_node->children[i+1]->word)==0){                          // eimai omoia
+		     	 if (strcmp(new_node->children[i]->is_final,"Y")==0&&new_node->children[i]->num_child==0 ) {  
+				                                                                  // einai termatikos
+				        strcpy(new_node->children[i+1]->is_final ,"Y");                                       //bazo epomeno termatiko
+		     	        strcpy(new_node->children[i]->word ,"zzzzz");                                         // proetoimazo diagrafi
+		            }else {                                                                                     // den einai termatikos
+					          strcpy(new_node->children[i]->word ,"zzzzz");                                     // proetoimazo diagrafi
+							create_child_1(new_node->children[i], new_node->children[i+1]  ,i,"");          // metafero ta paidia epomeno
+							}		
+						 }
+					 }
+       return ; 
+}
+
+
+ void print_child  (trie_node *new_node,int level)
+
+    {   for (int i=0;i<new_node->num_child;i++){
+        cout  <<" ------------------------------"  <<level<<"   "<<new_node->children[i]->word<< "   "<< new_node->children[i]->is_final<<endl;
+        
+        if (new_node->children[i]->num_child>0 )  {level++;print_child(new_node->children[i],level);level--;}
+          } 
+          return ;
+    }
+		 void print(){   
+	    for (int i=0;i<root->num_child;i++){
+        cout <<i <<"     "<<root->children[i]->word<<  "   "<< root->children[i]->is_final<< endl;
+    	if (root->children[i]->num_child>0 ) { print_child(root->children[i],1);
+		}
+	}
+	return ;
+}
+	void sort (trie_node *new_node){ 
+				trie_node *temp = new trie_node;
+			    
+			 	for(int i2=0;i2<=new_node->num_child-1;i2++)
+				{	for(int j=0;j<new_node->num_child-1-i2;j++)
+					{  
+					if(toString(new_node->children[j]->word) > toString(new_node->children[j+1]->word))
+						{   temp=new_node->children[j];
+							new_node->children[j]=new_node->children[j+1];
+							new_node->children[j+1]=temp;
+							}
+					}
+					}	
+					}
+
+
+ int Find_child (trie_node *node, string x){
+ 	int pos=0;
+  	string str2 (" "), first,last;
+    size_t found=0;
+    found = x.find(str2);
+    first  =x.substr (0,found).c_str();
+    pos=diarein(node,0,node->num_child,first,0);
+    if(strcmp(first.c_str(),node->children[pos]->word)==0&& strcmp(node->children[pos]->is_final,"Y")==0){
+	    }
+	else return 0;    
+    last=x.substr (found+1).c_str();
+	if (node->children[pos]->num_child>0 ) {//
+  	         Find_child (node->children[pos],last);
+  	        
+	  } else return 0; 
+ 
+ }
+ 
+ 
+ int find_next(trie_node *node,string buf_n,string last_n,int pos){
+ 	int pos1=0;
+  	string str2 (" "), first,last,last1,buf;
+    size_t found=0;
+     found = last_n.find(str2);
+ 	 first  =last_n.substr (0,found).c_str();
+ 	 last=last_n.substr (found+1).c_str();
+ 	 if(node->num_child==0) return 0;
+	 	 for (int k=0;k<node->num_child;k++){
+ 	    	if(strcmp(node->children[k]->word,first.c_str())==0){
+ 	 	    	if(strcmp(node->children[k]->is_final, "N")!=0 ){ 
+ 	 		    	buf_n=buf_n+" "+node->children[k]->word;
+ 	 		    	if(put!=buf_n.c_str()) cout<<buf_n<<"||"; 
+ 	 			    put=buf_n;
+ 	 			    return 0;
+			  }else{ 
+			       buf_n=buf_n+" "+node->children[k]->word;
+ 	 		       if (node->children[k]->num_child>0 ){  
+ 	 			   find_next(node->children[k],buf_n,last,pos);	
+				   } 
+			  }
+		  }
+	  }	
+ }
+ int Find_word( trie_node *node, string x, int i)     {
+  	int pos=0;
+  	string str2 (" "), first,last,last1,buf;
+    size_t found=0;
+    found = x.find(str2);
+     while (found > 0 ){ 
+          first  =x.substr (0,found).c_str();
+          pos=diarein(root,0,node->num_child,first,0);
+          last=x.substr (found+1).c_str(); 
+          if (pos>0&&strcmp(node->children[pos]->is_final, "N")!=0){
+	        if(strcmp(put.c_str(),first.c_str())!=0) cout<<first<< "||";                             //an to first den einai teliko 
+	        put=first.c_str();
+		 }
+		 if (pos>0){      
+		    buf=first;
+            if(node->children[pos]->num_child>0)find_next(node->children[pos],buf,last,pos);
+  		 }    
+            found = last.find(str2);
+          if (found>last.length()){break;
+		  } 
+          x=last;
+    }  
+    }
+   
+    
+int diarein(trie_node *node, int start, int end, string word,int k){  // an yparxei epistrefei ti uesi diaforetika 0
+     int x,i; 
+     i=(end+start)/2; 
+     k++; 
+     if (k>log(node->num_child)+4) return -1;
+  	if (strcmp(node->children[i]->word, word.c_str() )== 0) { return i;}
+  	if (toString(node->children[i]->word)>toString(word.c_str())) { 
+	x= diarein( node, start,i, word,k); return x;} 
+	else{ x= diarein( node, i ,end , word,k); return x;}
+	return x;
+  }
+  
+int delete_child(trie_node *node, string word){
+	string str2 (" "), first,last;
+    size_t found=0;
+    found = word.find(str2);
+    int find;
+    first =word.substr (0,found).c_str();
+    if (found >= word.length()) found=0;                                                   // found=0 => Den exei alli leksi
+    find=diarein(node, 0, node->num_child,first,0);                                              //koitaw an uparxei hdh
+     if (find > 0) {                                                                         // YPARXEI to paidi
+        if (found>0) { 
+		                last=word.substr (found+1).c_str();                                 // Exei apogono ara pare tin alli leksi
+			            delete_child(node->children[find], last);                          //  pare ton apogono
+                        }else{                                                              //found=0  den yparxei alli leksi 
+						  if(strcmp(node->children[find]->is_final,"Y")== 0 && node->children[find]->num_child==0 ){ // den exei  apogonoyw
+							 strcpy(node->children[find]->word ," ");       // sbinei ti leksi
+							 for (int j= find; j<=node->num_child;j++){     // metaferei to keno sto telos
+						        node->children[j]=node->children[j+1]; 
+							    node->num_child--; 
+								return find;	
+							  } 
+							}else  {                                                                //mia leksi h opoia exei apogonous 
+									            strcpy(node->children[find]->is_final ,"N");       //exei apogonous
+									         return find;	
+									  } 
+		   }                                                                                      // found=0 -------  Den yparxei alli leksi
+	} else { if(strcmp(node->children[0]->word,word.c_str())== 0){
+				strcpy(node->children[find]->is_final ," "); 
+				strcpy(node->children[0]->word ," ");  
+			                                                                                     	//NA METAFERO TO KENO STO TELOS 
+				node->num_child--;
+				return 1;
+			 }else{ return 0;
+			 }
+	}
+	 };  // end delete child
+
+
+void Delete_father(string nice)	{
+	   string str2 (" "), first;
+       size_t found=0;
+       found = nice.find(str2);
+       first =nice.substr (0,found).c_str();
+	   int find=diarein(root, 0, root->num_child,first,0);
+	   strcpy(root->children[find]->word ," ");
+}	
+
+void Delete(trie_node *new_node,string word_new)
+     
+        {   
+       string str2 (" "), first,last;
+       size_t found=0;
+       int find=0;
+       found = word_new.find(str2);
+       first =word_new.substr (0,found).c_str();
+       if (found > word_new.length()) found=0;
+       find=diarein(new_node, 0, new_node->num_child,first,0);                           //epistrefei tin uesi a yparei             
+	            if (find>0)  {                                                              // yparxei i leksi
+       	  		    if (found ==0) {                                                          // den yparxei alli leksi 
+									if (  strcmp(new_node->children[find]->is_final,"Y")== 0 && new_node->children[find]->num_child==0 ){            // den exei  apogonoyw
+									strcpy(new_node->children[find]->word ," ");       // sbinei ti leksi
+									for (int j= find; j<=new_node->num_child;j++){     // metaferei to keno sto telos
+						                new_node->children[j]=new_node->children[j+1]; }
+						                new_node->num_child--;                                    // meiosi ariumou paidion
+										return ;	
+									
+									  }else {                                                                  // mia leksi h opoia exei apogonous
+									            strcpy(new_node->children[find]->is_final ,"N");                 //exei apogonous
+									         return ;	
+									  }          
+					}else {  last=word_new.substr (found+1).c_str();                                             // H leks exei  deytero meros 
+						    int x= delete_child(new_node->children[find], last);
+					         if (x==1&& new_node->children[find]->num_child==0) {
+							 Delete_father(word_new);
+					         	for (int j= find; j<=new_node->num_child;j++){     // metaferei to keno sto telos
+						                new_node->children[j]=new_node->children[j+1]; }
+								new_node->num_child--;     
+										}
+										
+						    return ;   
+						 }                              
+		    	}
+		}    
+		
+ void deletez(trie_node *root1){
+ 	int sum=0;
+ 	for (int i = 0; i <root1->num_child ; i++){
+ 		if(strcmp(root1->children[i]->word,"zzzzz")==0){
+ 			trie_node *temp = new trie_node;
+ 			delete root1->children[i];                                        // diagrafi paliou kombou
+ 			root1->children[i]=temp;                                           // eisagogi neou kombou
+		    root1->children[i]->seats=K;
+        	root1->children[i]->num_child=0;
+            strcpy(root1->children[i]->is_final ,"N");
+    		 sum++;}
+			}
+			root1->num_child=root1->num_child-sum;                              // taktopoihsi ariumou paidion
+		 }
+ 		    
+	 
+    int Insert_new(trie_node *new_node,string word_new) {                           //na tin sbiso
+       string str2 (" "), first,last;
+       size_t found=0;
+       int find=0,k,i;
+       found = word_new.find(str2);
+       first =word_new.substr (0,found).c_str();
+       if (found > word_new.length()) found=0;
+       find=diarein(new_node, 0, new_node->num_child,first,0);  
+       if(find==-1) {	                                                       //den iparxei h leksi
+       	for (i=0;i<new_node->num_child;i++){
+       		if (toString(new_node->children[i]->word)>toString(word_new)){      // edo 8a mpei
+       			for(k =new_node->num_child; k>i-1; k--){                         // metafero ola mia 9esi deksia                  
+       				new_node->children[k+1]=new_node->children[k];
+				   }
+		    	if (found!=0){new_child(new_node->children[i], last);	}
+				new_node->num_child++;	
+				return i;
+			   }
+		   }
+       }
+       else {last=word_new.substr (found+1).c_str();                                        // yparxei i leksi
+             if (found==0){strcpy(new_node->children[find]->is_final ,"Y");  // den exei paidia 
+					 return -1;}    
+	         new_child(new_node->children[find], last);	                                    //bale eggonia                                                    // aujano toplithos
+            return -1 ; }
+    }
+  void Insert(trie_node *new_node,string word_new) {  
+	    int rows=2*K; 
+	     size_t found=0;
+       string str2 (" "), first,last;
+      if (new_node->num_child==K){ 
+          trie_node *temp1 = (trie_node*)malloc(rows*sizeof(trie_node));
+          temp1->num_child=K;
+            for (int k=0; k<2*K+1;k++) { 
+            if (k<K) { temp1->children[k]=new_node->children[k];
+            }else{
+            	add_child(temp1,k); 
+			}
+      }
+      new_node=NULL;
+     
+       found = word_new.find(str2);
+       first =word_new.substr (0,found).c_str();
+       if (found > word_new.length()) found=0; 
+       strcpy(temp1->children[temp1->num_child]->word ,first.c_str());
+       if (found==0){strcpy(temp1->children[temp1->num_child]->is_final ,"Y"); 
+					  this->root=temp1; return;}   
+       last=word_new.substr (found+1).c_str();                                             // pairno to epomeno
+	   new_child(temp1->children[ temp1->num_child], last);	                                                // aujano toplithos
+       this->root=temp1; return ; 
+    //  return ;
+      }
+      
+       found = word_new.find(str2);
+       first =word_new.substr (0,found).c_str();
+       if (found > word_new.length()) found=0; 
+       strcpy(new_node->children[new_node->num_child]->word ,first.c_str());
+       if (found==0){strcpy(new_node->children[new_node->num_child]->is_final ,"Y"); 
+					  return;}   
+       last=word_new.substr (found+1).c_str();                                             // pairno to epomeno
+	   new_child(new_node->children[ new_node->num_child], last);	                                                // aujano toplithos
+       return ; 
+}
+*/
+int read_data(char *x){
+  	
+  string line;
+   ifstream myfile (x);
+
+  
+  if (myfile.is_open())
+  { int i=0;
+    while ( getline (myfile,line) )  { 
+	        Insert(this->root,line);
+	        this->root->num_child++;
+	   	}  
+	cout<<endl;   	
+	root->seats = root->num_child;
+    sort(root);                  // taksinomisi eggrafon
+    put_away(root);             // bazo "zzzzz"
+    sort(root);                 //taksinomisi eggrafon
+    deletez(root);             // delete "zzzzz"
+    myfile.close();
+  }
+
+ else return 1;
+ 
+  return 0;
+};
+};
+ 
+ 
+ 
+
+
+int quiry_new(char *x, Index N_Gram){
+   string line;
+   string str2 (" "), first,last;
+   size_t found=0;
+   ifstream myfile (x);
+  if (myfile.is_open())
+  {
+    while ( getline (myfile,line) )  {  
+    found = line.find(str2);
+    first =line.substr (0,found).c_str();
+	if (strcmp(first.c_str(), "Q" )== 0) {  
+			    if(line.length()>0)last=line.substr (found+1).c_str();
+				N_Gram.Find_word( N_Gram.root,last,0) ;	
+				cout<<endl;
+		}
+		
+	if (strcmp(first.c_str(), "A" )== 0) { 
+			    last=line.substr (found+1).c_str(); 
+				int num=N_Gram.Insert_new(N_Gram.root,last);
+				if (num>=0 ){ 
+				trie_node *new1 = new trie_node;
+        	    new1->seats=K;
+        	    new1->num_child=0;
+        	    strcpy(new1->is_final ,"Y");
+        	    strcpy(new1->word,N_Gram.root->children[num+1]->word);
+        	    N_Gram.root->children[num]=new1;
+        	    strcpy(N_Gram.root->children[num]->word,last.c_str()  );
+            }
+		}
+	if (strcmp(first.c_str(), "D" )== 0) { 
+			    last=line.substr (found+1).c_str();  
+			 	N_Gram.Delete(N_Gram.root,last);
+		}
+	if (strcmp(first.c_str(), "F" )== 0) {
+			    myfile.close();
+				return 1;	
+		}
+    }  
+  } 
+  else return 0;	
+}
+
+
+long long toString(string rec) {
+
+  int c, sign, offset;
+  long long n;
+  char a[200];
+  if (rec[0] == '-') {  // Handle negative integers
+    sign = -1;
+  }
+  if (sign == -1) {  // Set starting position to convert
+    offset = 1;
+  }
+  else {
+    offset = 0;
+  }
+  n = 0;
+ for (c = offset;  c < 9 ; c++) {
+      n = n * 100 + rec[c] - '0';
+  }
+  if (sign == -1) {
+    n = -n;
+  }
+  return n;
+}  
+ 
+
